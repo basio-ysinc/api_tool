@@ -18,6 +18,7 @@ Usage:
 Arg:
     "xlsx2yaml"      API定義の変換 xlsx -> yaml
     "yaml2xlsx"      API定義の変換 yaml -> xlsx
+    "yaml2swagger"   API定義の変換 yaml -> swagger (OpenAPI 3.0)
     "gen-single"     API定義からテキスト生成 pongo2
     "gen-multiple"   API定義から複数のテキスト生成 pongo2
 `
@@ -42,5 +43,7 @@ func main() {
 		RunXlsx2Yaml()
 	case "yaml2xlsx":
 		RunYaml2Xlsx()
+	case "yaml2swagger":
+		RunYaml2Swagger()
 	}
 }
