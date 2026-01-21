@@ -16,7 +16,7 @@ const usageYaml2Swagger = `api_tool yaml2swagger
 	リクエストは全てPOST、パラメーターは全てクエリストリング
 
 Usage:
-  api_tool yaml2swagger [--only=<OUTPUT_GROUPS>] [--format=<FORMAT>] [--base-path=<BASE_PATH>] [--title=<TITLE>] [--version=<VERSION>] [--trailing-slash] <OUTPUT_PATH> INPUTS...
+  api_tool yaml2swagger [--only=<OUTPUT_GROUPS>] [--format=<FORMAT>] [--base-path=<BASE_PATH>] [--title=<TITLE>] [--version=<VERSION>] <OUTPUT_PATH> INPUTS...
   api_tool yaml2swagger -h | --help
 
 Args:
@@ -29,19 +29,17 @@ Options:
 	--base-path=<BASE_PATH>  APIのベースパス [default:/api]
 	--title=<TITLE>          API タイトル [default:API]
 	--version=<VERSION>      APIバージョン [default:1.0.0]
-	--trailing-slash         URLの末尾に/を追加
 	-h --help                Show this screen.
 `
 
 type Yaml2SwaggerArg struct {
-	Inputs        []string
-	OutputGroups  []string
-	OutputPath    string
-	Format        string
-	BasePath      string
-	Title         string
-	Version       string
-	TrailingSlash bool
+	Inputs       []string
+	OutputGroups []string
+	OutputPath   string
+	Format       string
+	BasePath     string
+	Title        string
+	Version      string
 }
 
 func NewYaml2SwaggerArg(arguments map[string]interface{}) Yaml2SwaggerArg {
@@ -63,14 +61,13 @@ func NewYaml2SwaggerArg(arguments map[string]interface{}) Yaml2SwaggerArg {
 	}
 
 	return Yaml2SwaggerArg{
-		Inputs:        sl(arguments["INPUTS"]),
-		OutputGroups:  slc(arguments["--only"]),
-		OutputPath:    s(arguments["<OUTPUT_PATH>"]),
-		Format:        format,
-		BasePath:      basePath,
-		Title:         title,
-		Version:       version,
-		TrailingSlash: b(arguments["--trailing-slash"]),
+		Inputs:       sl(arguments["INPUTS"]),
+		OutputGroups: slc(arguments["--only"]),
+		OutputPath:   s(arguments["<OUTPUT_PATH>"]),
+		Format:       format,
+		BasePath:     basePath,
+		Title:        title,
+		Version:      version,
 	}
 }
 
@@ -189,6 +186,9 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 			Title:   arg.Title,
 			Version: arg.Version,
 		},
+		Servers: []OpenAPIServer{
+			{URL: "http://localhost:8080"},
+		},
 		Paths: make(map[string]PathItem),
 	}
 
@@ -207,12 +207,17 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 	// Add enums to schemas
 	for _, enum := range enums {
 		enumValues := make([]interface{}, len(enum.Members))
-		for i, m := range enum.Members {
-			enumValues[i] = m.Ordinal
+		var descBuilder strings.Builder
+		if enum.Description != "" {
+			descBuilder.WriteString(enum.Description)
+		}
+		for _, m := range enum.Members {
+			enumValues[m.Ordinal] = m.Ordinal
+			descBuilder.WriteString(fmt.Sprintf("\n- %d: %s", m.Ordinal, m.Name))
 		}
 		components.Schemas[enum.Name] = ComponentSchema{
 			Type:        "integer",
-			Description: enum.Description,
+			Description: descBuilder.String(),
 			Enum:        enumValues,
 		}
 	}
@@ -236,10 +241,9 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 
 	// Build paths from actions
 	for _, action := range actions {
-		pathStr := arg.BasePath + "/" + action.Group + "/" + action.Name
-		if arg.TrailingSlash {
-			pathStr += "/"
-		}
+		// Action name starts with lowercase
+		actionName := strings.ToLower(action.Name[:1]) + action.Name[1:]
+		pathStr := arg.BasePath + "/" + action.Group + "/" + actionName + "/"
 
 		// Convert request properties to query parameters
 		params := make([]Parameter, 0)
