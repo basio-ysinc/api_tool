@@ -54,6 +54,7 @@ type Action struct {
 	Name        string
 	Description string `yaml:"description,omitempty"`
 	Group       string `yaml:"-"`
+	Auth        *bool  `yaml:"auth,omitempty"` // nil or true = 認証必要, false = 認証不要
 
 	RequestProperties  []*Property `yaml:"requestProperties"`
 	ResponseProperties []*Property `yaml:"responseProperties"`

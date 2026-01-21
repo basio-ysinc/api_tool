@@ -102,12 +102,13 @@ type PathItem struct {
 }
 
 type Operation struct {
-	Tags        []string            `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Summary     string              `json:"summary,omitempty" yaml:"summary,omitempty"`
-	Description string              `json:"description,omitempty" yaml:"description,omitempty"`
-	OperationID string              `json:"operationId,omitempty" yaml:"operationId,omitempty"`
-	Parameters  []Parameter         `json:"parameters,omitempty" yaml:"parameters,omitempty"`
-	Responses   map[string]Response `json:"responses" yaml:"responses"`
+	Tags        []string              `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Summary     string                `json:"summary,omitempty" yaml:"summary,omitempty"`
+	Description string                `json:"description,omitempty" yaml:"description,omitempty"`
+	OperationID string                `json:"operationId,omitempty" yaml:"operationId,omitempty"`
+	Parameters  []Parameter           `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Responses   map[string]Response   `json:"responses" yaml:"responses"`
+	Security    []map[string][]string `json:"security" yaml:"security"`
 }
 
 type Parameter struct {
@@ -135,7 +136,14 @@ type MediaType struct {
 }
 
 type OpenAPIComponents struct {
-	Schemas map[string]ComponentSchema `json:"schemas,omitempty" yaml:"schemas,omitempty"`
+	Schemas         map[string]ComponentSchema  `json:"schemas,omitempty" yaml:"schemas,omitempty"`
+	SecuritySchemes map[string]SecurityScheme   `json:"securitySchemes,omitempty" yaml:"securitySchemes,omitempty"`
+}
+
+type SecurityScheme struct {
+	Type string `json:"type" yaml:"type"`
+	In   string `json:"in" yaml:"in"`
+	Name string `json:"name" yaml:"name"`
 }
 
 type ComponentSchema struct {
@@ -199,9 +207,16 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 		})
 	}
 
-	// Build components (schemas)
+	// Build components (schemas and securitySchemes)
 	components := &OpenAPIComponents{
 		Schemas: make(map[string]ComponentSchema),
+		SecuritySchemes: map[string]SecurityScheme{
+			"cookieAuth": {
+				Type: "apiKey",
+				In:   "cookie",
+				Name: "authToken",
+			},
+		},
 	}
 
 	// Add enums to schemas
@@ -235,9 +250,8 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 		}
 	}
 
-	if len(components.Schemas) > 0 {
-		spec.Components = components
-	}
+	// Always include components (securitySchemes is always present)
+	spec.Components = components
 
 	// Build paths from actions
 	for _, action := range actions {
@@ -297,6 +311,17 @@ func buildOpenAPISpec(arg Yaml2SwaggerArg, enums []*Enum, types []*Type, actions
 			OperationID: toOperationID(action.Group, action.Name),
 			Parameters:  params,
 			Responses:   responses,
+		}
+
+		// Apply security based on action.Auth
+		// auth未指定(nil)またはtrue → 認証必要
+		// auth: false → 認証不要
+		if action.Auth == nil || *action.Auth {
+			operation.Security = []map[string][]string{
+				{"cookieAuth": {}},
+			}
+		} else {
+			operation.Security = []map[string][]string{}
 		}
 
 		spec.Paths[pathStr] = PathItem{
