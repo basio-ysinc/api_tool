@@ -1,4 +1,4 @@
-module github.com/alfalfalfa/api_tool
+module github.com/basio-ysinc/api_tool
 
 go 1.19
 
