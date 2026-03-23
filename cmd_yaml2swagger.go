@@ -117,13 +117,15 @@ type Parameter struct {
 	Description string      `json:"description,omitempty" yaml:"description,omitempty"`
 	Required    bool        `json:"required,omitempty" yaml:"required,omitempty"`
 	Schema      SchemaRef   `json:"schema" yaml:"schema"`
+	Example     interface{} `json:"example,omitempty" yaml:"example,omitempty"`
 }
 
 type SchemaRef struct {
-	Type   string     `json:"type,omitempty" yaml:"type,omitempty"`
-	Format string     `json:"format,omitempty" yaml:"format,omitempty"`
-	Items  *SchemaRef `json:"items,omitempty" yaml:"items,omitempty"`
-	Ref    string     `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Type   string      `json:"type,omitempty" yaml:"type,omitempty"`
+	Format string      `json:"format,omitempty" yaml:"format,omitempty"`
+	Items  *SchemaRef  `json:"items,omitempty" yaml:"items,omitempty"`
+	Ref    string      `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	AllOf  []SchemaRef `json:"allOf,omitempty" yaml:"allOf,omitempty"`
 }
 
 type Response struct {
@@ -151,14 +153,21 @@ type ComponentSchema struct {
 	Description string                    `json:"description,omitempty" yaml:"description,omitempty"`
 	Properties  map[string]SchemaProperty `json:"properties,omitempty" yaml:"properties,omitempty"`
 	Enum        []interface{}             `json:"enum,omitempty" yaml:"enum,omitempty"`
+	AllOf       []ComponentSchema         `json:"allOf,omitempty" yaml:"allOf,omitempty"`
+	Required    []string                  `json:"required,omitempty" yaml:"required,omitempty"`
+	Ref         string                    `json:"$ref,omitempty" yaml:"$ref,omitempty"`
 }
 
 type SchemaProperty struct {
-	Type        string     `json:"type,omitempty" yaml:"type,omitempty"`
-	Format      string     `json:"format,omitempty" yaml:"format,omitempty"`
-	Description string     `json:"description,omitempty" yaml:"description,omitempty"`
-	Items       *SchemaRef `json:"items,omitempty" yaml:"items,omitempty"`
-	Ref         string     `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Type        string      `json:"type,omitempty" yaml:"type,omitempty"`
+	Format      string      `json:"format,omitempty" yaml:"format,omitempty"`
+	Description string      `json:"description,omitempty" yaml:"description,omitempty"`
+	Items       *SchemaRef  `json:"items,omitempty" yaml:"items,omitempty"`
+	Ref         string      `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	AllOf       []SchemaRef `json:"allOf,omitempty" yaml:"allOf,omitempty"`
+	Deprecated  bool        `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
+	Example     interface{} `json:"example,omitempty" yaml:"example,omitempty"`
+	Nullable    bool        `json:"nullable,omitempty" yaml:"nullable,omitempty"`
 }
 
 func RunYaml2Swagger() {
