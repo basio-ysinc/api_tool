@@ -15,6 +15,7 @@ go build -o api_tool .
 | `xlsx2yaml` | API定義の変換 xlsx -> yaml |
 | `yaml2xlsx` | API定義の変換 yaml -> xlsx |
 | `yaml2swagger` | API定義の変換 yaml -> swagger (OpenAPI 3.0) |
+| `swagger2yaml` | API定義の変換 swagger (OpenAPI 3.0) -> yaml |
 | `gen-single` | API定義からテキスト生成 (単一ファイル) |
 | `gen-multiple` | API定義から複数のテキスト生成 |
 
@@ -101,6 +102,44 @@ api_tool yaml2swagger --only=user,auth swagger.json api.yaml
 - パスは `{base-path}/{group}/{actionName}/` 形式（末尾スラッシュあり、actionNameは小文字始まり）
 - Enum/カスタム型は `components/schemas` に定義
 - レスポンスは `{action}Response` としてスキーマ定義
+
+---
+
+## swagger2yaml
+
+Swagger（OpenAPI 3.0）形式のAPI定義をYAML形式に変換する。`yaml2swagger` の逆変換。
+
+```bash
+api_tool swagger2yaml <INPUT_PATH> <OUTPUT_PATH>
+```
+
+### 引数
+
+| 引数 | 説明 |
+|------|------|
+| `<INPUT_PATH>` | 入力Swaggerファイルパス（json/yaml） |
+| `<OUTPUT_PATH>` | 出力YAMLファイルパス |
+
+### 例
+
+```bash
+api_tool swagger2yaml swagger.json api_spec.yaml
+api_tool swagger2yaml swagger.yaml api_spec.yaml
+```
+
+### 変換仕様
+
+- 入力形式はファイル拡張子で自動判定（`.json` / `.yaml` / `.yml`）
+- `paths` の各エンドポイント → Action に変換
+  - グループ名は `tags[0]` から取得
+  - Action名は `summary` から取得
+  - `security` が空配列の場合 `auth: false`、それ以外は認証必要（デフォルト）
+- `components/schemas` を分類して変換:
+  - 整数型 + `enum` → Enum（descriptionの `- N: Name` 形式からメンバー名をパース）
+  - 文字列型 + `enum` → Enum（enum値をそのままメンバー名として使用、ordinalはindex）
+  - オブジェクト型（名前が `Response` 以外） → Type
+  - `allOf` を含むスキーマは全パーツのプロパティをフラットにマージ
+- Type/Enumのグループ割り当てはActionからの参照をたどって決定
 
 ---
 
